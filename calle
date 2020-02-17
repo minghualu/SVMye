@@ -1,0 +1,99 @@
+import matplotlib.pyplot as plt
+import numpy as np
+import random
+import math
+from scipy import optimize
+from scipy.optimize import minimize
+
+# Generating test data
+np.random.seed(100)
+classA = np.concatenate(
+    (np.random.randn(10, 2) * 0.2 + [1.5, 0.5],
+     np.random.randn(10, 2) * 0.2 + [-1.5, 0.5]))
+classB = np.random.randn(20, 2) * 0.2 + [0.0, 0.5]
+print(classB)
+
+inputs = np.concatenate((classA, classB))
+targets = np.concatenate(
+    (np.ones(classA.shape[0]),
+     -np.ones(classB.shape[0])))
+
+N = inputs.shape[0]  # Number of rows (samples)
+
+permute = list(range(N))
+random.shuffle(permute)
+inputs = inputs[permute, :]
+targets = targets[permute]
+
+t = [-1, 1]  # Target class for datapoint i
+
+
+# A suitable Kernel function
+def ker1(x, y):
+    """Linear Kernel, results in linear separation"""
+    return np.dot(x, y)
+
+# Linear Kernel for matrix
+def ker2(input):
+    row_1 = input[:, 0]
+    row_2 = input[:, 1]
+    return np.dot(row_1, row_2)
+
+
+# Pre-computed matrix P
+P = np.zeros((N, N))
+
+for i in range(0, N):
+    for j in range(0, N):
+        P[i, j] = targets[i] * targets[j] * ker2(inputs)
+
+
+# P = np.dot(np.dot(np.transpose(targets), targets), ker_i(inputs))
+# Create new function with inputs as input and returns ker-part?
+
+# The function objective, only receives vector alpha as parameter
+
+def objective(alpha):
+    sum_1 = 0
+    sum_2 = 0
+    for i in range(0, N):
+        for j in range(0, N):
+            sum_1 += alpha[i] * alpha[j] * P[i, j]
+        sum_2 += alpha[i]
+    sum_1 = sum_1 / 2
+    return sum_1 - sum_2
+
+
+def zerofun(alpha):
+    """"Implement equality constraint of (10)"""
+    return np.dot(alpha, targets)
+
+# Constraint
+constraint = {'type': 'eq', 'fun': zerofun}
+XC = constraint
+# Initial guess of the alpha vector
+start = np.zeros(N)
+# Upper constraint
+C = None
+# Bounds
+bounds = [(0, C) for b in range(N)]
+B = bounds
+
+# a = [ expr for x in seq ]
+
+# Main function
+ret = minimize(objective, start,
+               bounds=B, constraints=XC)
+
+alpha = ret['x']
+
+# Plot
+plt.plot([p[0] for p in classA],
+         [p[1] for p in classA],
+         'b. ')
+plt.plot([p[0] for p in classB],
+         [p[1] for p in classB],
+         'r. ')
+
+plt.axis('equal')
+plt.show()
